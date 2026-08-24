@@ -17,30 +17,10 @@ from .tensor import (
     SparseLevel,
 )
 
-def alias_to_custom(tensor: BinsparseTensor) -> CustomTensor:
-    """Return the custom-level representation of any Binsparse tensor."""
-    container = InMemoryBinsparseContainer()
-    tensor.serialize(container, copy=False, alias=False)
-    custom = CustomTensor.parse(container, copy=False)
-    assert isinstance(custom, CustomTensor)
-    return custom
-
-def custom_to_alias(
-    tensor: BinsparseTensor, format_name: str | None = None
-) -> BinsparseTensor:
-    """Return the predefined alias for a custom tensor, when one exists."""
-    container = InMemoryBinsparseContainer()
-    tensor.serialize(container, copy=False, alias=True)
-    alias = BinsparseTensor.parse(container, copy=False)
-    if format_name is not None and alias.format != format_name:
-        raise ValueError(f"custom layout is not compatible with {format_name!r}")
-    return alias
-
 def binsparse_to_coo(
-    tensor: BinsparseTensor,
+    tensor: CustomTensor,
 ) -> Iterator[tuple[tuple[Any, ...], Any]]:
     """Iterate over a tensor's explicitly stored coordinate/value pairs."""
-    tensor = tensor if isinstance(tensor, CustomTensor) else alias_to_custom(tensor)
     shape = tensor.shape
     root = tensor.level
     assert root is not None
@@ -170,7 +150,15 @@ def coo_to_binsparse(
 
 def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor:
     """Reformat *tensor* according to a Binsparse format descriptor."""
-    source = tensor if isinstance(tensor, CustomTensor) else alias_to_custom(tensor)
+    if isinstance(tensor, CustomTensor):
+        source = tensor
+    else:
+        container = InMemoryBinsparseContainer()
+        tensor.serialize(container, copy=False, alias=False)
+        parsed = CustomTensor.parse(container, copy=False)
+        assert isinstance(parsed, CustomTensor)
+        source = parsed
+
     format_name = header["format"]
     if format_name == "custom":
         custom = header["custom"]
@@ -200,7 +188,15 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
     result.transpose = None if transpose is None else tuple(transpose)
     result.fill = source.fill
     result.fill_value = source.fill_value
-    return result if format_name == "custom" else custom_to_alias(result, format_name)
+    if format_name == "custom":
+        return result
+
+    container = InMemoryBinsparseContainer()
+    result.serialize(container, copy=False, alias=True)
+    alias = BinsparseTensor.parse(container, copy=False)
+    if alias.format != format_name:
+        raise ValueError(f"custom layout is not compatible with {format_name!r}")
+    return alias
 
 
 __all__ = [
