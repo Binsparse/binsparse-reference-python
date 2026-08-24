@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package and test dependencies
+        run: python -m pip install --upgrade pip pytest pytest-cov pytest-xdist -e .
+      - name: Run tests
+        run: python -m pytest -n auto --cov=binsparse --cov-report=term-missing
+
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install package and mypy
+        run: python -m pip install --upgrade pip mypy -e .
+      - name: Run mypy
+        run: python -m mypy
+
+  conversions:
+    name: ${{ matrix.name }} conversion
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SciPy
+            extra: scipy
+            test: src/tests/test_conversion_scipy.py
+          - name: PyData/Sparse
+            extra: sparse
+            test: src/tests/test_conversion_sparse.py
+          - name: PyTorch
+            extra: torch
+            test: src/tests/test_conversion_torch.py
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install ${{ matrix.name }} adapter
+        run: python -m pip install --upgrade pip pytest -e ".[${{ matrix.extra }}]"
+      - name: Test ${{ matrix.name }} adapter
+        run: python -m pytest -q ${{ matrix.test }}
+
+  package:
+    name: Build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build twine
+      - name: Build distributions
+        run: python -m build
+      - name: Validate distributions
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: distributions
+          path: dist/
+          if-no-files-found: error
