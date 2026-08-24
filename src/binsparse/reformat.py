@@ -200,8 +200,6 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
 
 
 __all__ = [
-    "alias_to_custom",
-    "custom_to_alias",
     "binsparse_to_coo",
     "coo_to_binsparse",
     "reformat",
