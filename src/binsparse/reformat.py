@@ -8,6 +8,7 @@ import numpy as np
 
 from .container import InMemoryBinsparseContainer
 from .tensor import (
+    _PREDEFINED_LEVELS,
     BinsparseLevel,
     BinsparseTensor,
     CustomTensor,
@@ -24,11 +25,16 @@ def alias_to_custom(tensor: BinsparseTensor) -> CustomTensor:
     assert isinstance(custom, CustomTensor)
     return custom
 
-def custom_to_alias(tensor: BinsparseTensor) -> BinsparseTensor:
+def custom_to_alias(
+    tensor: BinsparseTensor, format_name: str | None = None
+) -> BinsparseTensor:
+    """Return the predefined alias for a custom tensor, when one exists."""
     container = InMemoryBinsparseContainer()
     tensor.serialize(container, copy=False, alias=True)
-    custom = BinsparseTensor.parse(container, copy=False)
-    return custom
+    alias = BinsparseTensor.parse(container, copy=False)
+    if format_name is not None and alias.format != format_name:
+        raise ValueError(f"custom layout is not compatible with {format_name!r}")
+    return alias
 
 def binsparse_to_coo(
     tensor: BinsparseTensor,
@@ -162,22 +168,39 @@ def coo_to_binsparse(
         ),
     )
 
-def reformat(tns:BinsparseTensor, header:dict[str, Any]):
-    if not isinstance(tns, CustomTensor):
-        tns = alias_to_custom(tns)
-    coo = binsparse_to_coo(tns)
-    if header["format"] != "custom":
-        fmt, transpose = tensor._PREDEFINED_LEVELS
+def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor:
+    """Reformat *tensor* according to a Binsparse format descriptor."""
+    source = tensor if isinstance(tensor, CustomTensor) else alias_to_custom(tensor)
+    format_name = header["format"]
+    if format_name == "custom":
+        custom = header["custom"]
+        format = custom["level"]
+        transpose = custom.get("transpose")
     else:
-        fmt = header["levels"]
-        transpose = header["transpose"]
+        try:
+            format, transpose = _PREDEFINED_LEVELS[format_name]
+        except KeyError as error:
+            raise ValueError(f"unknown Binsparse format {format_name!r}") from error
 
-    coo_2 = [c[p] for p in transpose]
-    tns_2 = coo_to_binsparse(coo_2, fmt)
-    if header["format"] != custom:
-        tns_2 = custom_to_alias(tns_2, header["format"])
-    #convert datatypes, probably with the In-memory format trick again.
-    return tns_2
+    source_transpose = source.transpose or tuple(range(len(source.shape)))
+    target_transpose = transpose or tuple(range(len(source.shape)))
+    entries = [
+        (
+            tuple(
+                coord[source_transpose.index(d)]
+                for d in target_transpose
+            ),
+            value,
+        )
+        for coord, value in binsparse_to_coo(source)
+    ]
+    stored_shape = tuple(source.shape[d] for d in target_transpose)
+    result = coo_to_binsparse(format, entries, shape=stored_shape)
+    result.shape = source.shape
+    result.transpose = None if transpose is None else tuple(transpose)
+    result.fill = source.fill
+    result.fill_value = source.fill_value
+    return result if format_name == "custom" else custom_to_alias(result, format_name)
 
 
 __all__ = [
@@ -185,4 +208,5 @@ __all__ = [
     "custom_to_alias",
     "binsparse_to_coo",
     "coo_to_binsparse",
+    "reformat",
 ]

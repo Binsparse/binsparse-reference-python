@@ -1,8 +1,13 @@
 import numpy as np
 import pytest
 
-from binsparse.reformat import alias_to_custom, binsparse_to_coo, coo_to_binsparse
-from binsparse.tensor import CSRMatrix, CustomTensor, DenseLevel, SparseLevel
+from binsparse.reformat import (
+    alias_to_custom,
+    binsparse_to_coo,
+    coo_to_binsparse,
+    reformat,
+)
+from binsparse.tensor import CSCMatrix, CSRMatrix, CustomTensor, DenseLevel, SparseLevel
 
 
 CSR_FORMAT = {
@@ -61,3 +66,48 @@ def test_coo_to_binsparse_rejects_duplicate_coordinates() -> None:
         coo_to_binsparse(
             CSR_FORMAT, [((0, 0), 1), ((0, 0), 2)], shape=(1, 1)
         )
+
+
+def test_reformat_changes_predefined_layout() -> None:
+    tensor = CSRMatrix(
+        (3, 4),
+        3,
+        fill=True,
+        fill_value=-1,
+        pointers_to_1=np.array([0, 1, 1, 3], dtype=np.uint64),
+        indices_1=np.array([2, 0, 3], dtype=np.uint32),
+        values=np.array([5, 6, 7], dtype=np.int16),
+    )
+
+    result = reformat(tensor, {"format": "CSC"})
+
+    assert isinstance(result, CSCMatrix)
+    assert result.shape == tensor.shape
+    assert result.fill is True
+    assert result.fill_value == -1
+    np.testing.assert_array_equal(result.pointers_to_1, [0, 1, 1, 2, 3])
+    np.testing.assert_array_equal(result.indices_1, [2, 0, 2])
+    np.testing.assert_array_equal(result.values, [6, 5, 7])
+
+
+def test_reformat_accepts_custom_descriptor() -> None:
+    tensor = CSRMatrix(
+        (2, 3),
+        2,
+        pointers_to_1=np.array([0, 1, 2], dtype=np.uint64),
+        indices_1=np.array([2, 0], dtype=np.uint16),
+        values=np.array([4, 9], dtype=np.int8),
+    )
+    format = {
+        "level_desc": "sparse",
+        "rank": 2,
+        "level": {"level_desc": "element"},
+    }
+
+    result = reformat(
+        tensor, {"format": "custom", "custom": {"level": format}}
+    )
+
+    assert isinstance(result, CustomTensor)
+    assert result.transpose is None
+    assert list(binsparse_to_coo(result)) == [((0, 2), 4), ((1, 0), 9)]
