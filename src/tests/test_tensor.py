@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from binsparse.container import NPZBinsparseContainer
+from binsparse.container import InMemoryBinsparseContainer, NPZBinsparseContainer
 from binsparse.errors import BinsparseParseError
 from binsparse.tensor import (
     BinsparseTensor,
@@ -35,6 +35,28 @@ def test_csr_round_trip() -> None:
     np.testing.assert_array_equal(parsed.pointers_to_1, original.pointers_to_1)
     np.testing.assert_array_equal(parsed.indices_1, original.indices_1)
     np.testing.assert_array_equal(parsed.values, original.values)
+
+
+def test_in_memory_container_uses_descriptor_and_array_list() -> None:
+    header: dict[str, object] = {}
+    buffers: list[np.ndarray] = []
+    values = np.arange(4, dtype=np.float32)
+    original = DVECVector((4,), 4, values=values)
+
+    container = InMemoryBinsparseContainer(header, buffers)
+    original.serialize(container, copy=False)
+
+    assert header is container.header
+    assert buffers is container.buffers
+    assert header["data_types"] == {"values": "float32"}
+    assert len(buffers) == 1
+    assert np.shares_memory(buffers[0], values)
+
+    parsed = BinsparseTensor.parse(
+        InMemoryBinsparseContainer(header, buffers), copy=False
+    )
+    assert isinstance(parsed, DVECVector)
+    assert np.shares_memory(parsed.values, values)
 
 
 def test_explicit_format_requires_exact_match() -> None:

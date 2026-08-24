@@ -4,6 +4,7 @@ from .container import (
     BINSPARSE_HEADER,
     BinsparseContainer,
     HDF5BinsparseContainer,
+    InMemoryBinsparseContainer,
     NPZBinsparseContainer,
     ZarrBinsparseContainer,
 )
@@ -54,6 +55,7 @@ __all__ = [
     "DenseLevel",
     "ElementLevel",
     "HDF5BinsparseContainer",
+    "InMemoryBinsparseContainer",
     "IndexableLevel",
     "NPZBinsparseContainer",
     "SparseLevel",

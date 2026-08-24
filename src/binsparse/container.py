@@ -32,6 +32,7 @@ dtype_to_str = {
 
 str_to_dtype = {value: key for key, value in dtype_to_str.items()}
 
+
 class BinsparseContainer(ABC):
     """Common interface to a Binsparse binary container or container group."""
 
@@ -159,6 +160,46 @@ class BinsparseContainer(ABC):
     def _write_buffer(self, key: str, value: np.ndarray) -> None:
         """Write an already encoded named binary array."""
 
+
+class InMemoryBinsparseContainer(BinsparseContainer):
+    """Store a Binsparse descriptor and its arrays directly in memory."""
+
+    def __init__(
+        self,
+        header: dict[str, Any] | None = None,
+        buffers: list[np.ndarray] | None = None,
+    ) -> None:
+        super().__init__()
+        self.header = {} if header is None else header
+        self.buffers = [] if buffers is None else buffers
+        data_types = self.header.get("data_types")
+        if isinstance(data_types, dict):
+            self.data_types.update(data_types)
+
+    def _read_header(self) -> dict[str, Any]:
+        return self.header
+
+    def _write_header(self, value: dict[str, Any]) -> None:
+        self.header.clear()
+        self.header.update(value)
+
+    def _read_buffer(self, key: str) -> np.ndarray:
+        try:
+            index = list(self.header["data_types"]).index(key)
+        except (KeyError, ValueError) as error:
+            raise KeyError(f"in-memory container has no buffer {key!r}") from error
+        try:
+            return self.buffers[index]
+        except IndexError as error:
+            raise KeyError(f"in-memory container has no buffer {key!r}") from error
+
+    def _write_buffer(self, key: str, value: np.ndarray) -> None:
+        if key in self.data_types:
+            self.buffers[list(self.data_types).index(key)] = value
+        else:
+            self.buffers.append(value)
+
+
 class HDF5BinsparseContainer(BinsparseContainer):
     """Adapt an h5py ``Container`` or ``Group``."""
 
@@ -246,6 +287,7 @@ __all__ = [
     "BINSPARSE_HEADER",
     "BinsparseContainer",
     "HDF5BinsparseContainer",
+    "InMemoryBinsparseContainer",
     "ZarrBinsparseContainer",
     "NPZBinsparseContainer",
 ]
