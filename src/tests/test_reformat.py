@@ -2,12 +2,18 @@ import numpy as np
 import pytest
 
 from binsparse.reformat import (
-    alias_to_custom,
     binsparse_to_coo,
     coo_to_binsparse,
     reformat,
 )
-from binsparse.tensor import CSCMatrix, CSRMatrix, CustomTensor, DenseLevel, SparseLevel
+from binsparse.tensor import (
+    CSCMatrix,
+    CSRMatrix,
+    CustomTensor,
+    DenseLevel,
+    ElementLevel,
+    SparseLevel,
+)
 
 
 CSR_FORMAT = {
@@ -21,16 +27,24 @@ CSR_FORMAT = {
 }
 
 
-def test_binsparse_to_coo_iterates_csr_entries() -> None:
-    tensor = CSRMatrix(
+def _custom_csr() -> CustomTensor:
+    return CustomTensor(
         (3, 4),
         3,
-        pointers_to_1=np.array([0, 1, 1, 3], dtype=np.uint64),
-        indices_1=np.array([2, 0, 3], dtype=np.uint32),
-        values=np.array([5, 6, 7], dtype=np.int16),
+        level=DenseLevel(
+            1,
+            SparseLevel(
+                1,
+                ElementLevel(np.array([5, 6, 7], dtype=np.int16)),
+                (np.array([2, 0, 3], dtype=np.uint32),),
+                np.array([0, 1, 1, 3], dtype=np.uint64),
+            ),
+        ),
     )
 
-    entries = list(binsparse_to_coo(tensor))
+
+def test_binsparse_to_coo_iterates_csr_entries() -> None:
+    entries = list(binsparse_to_coo(_custom_csr()))
     assert entries == [
         ((0, 2), 5),
         ((2, 0), 6),
@@ -40,14 +54,7 @@ def test_binsparse_to_coo_iterates_csr_entries() -> None:
 
 
 def test_coo_round_trip_rebuilds_custom_levels() -> None:
-    tensor = CSRMatrix(
-        (3, 4),
-        3,
-        pointers_to_1=np.array([0, 1, 1, 3], dtype=np.uint64),
-        indices_1=np.array([2, 0, 3], dtype=np.uint32),
-        values=np.array([5, 6, 7], dtype=np.int16),
-    )
-    custom = alias_to_custom(tensor)
+    custom = _custom_csr()
     entries = list(binsparse_to_coo(custom))
 
     rebuilt = coo_to_binsparse(CSR_FORMAT, reversed(entries), shape=custom.shape)

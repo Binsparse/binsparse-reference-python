@@ -9,6 +9,7 @@ from .container import (
     ZarrBinsparseContainer,
 )
 from .errors import BinsparseParseError
+from .io import load_binsparse, save_binsparse
 from .reformat import (
     alias_to_custom,
     binsparse_to_coo,
@@ -64,8 +65,10 @@ __all__ = [
     "HDF5BinsparseContainer",
     "InMemoryBinsparseContainer",
     "IndexableLevel",
+    "load_binsparse",
     "NPZBinsparseContainer",
     "SparseLevel",
+    "save_binsparse",
     "ZarrBinsparseContainer",
     "alias_to_custom",
     "binsparse_to_coo",

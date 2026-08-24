@@ -17,6 +17,28 @@ from .tensor import (
     SparseLevel,
 )
 
+
+def alias_to_custom(tensor: BinsparseTensor) -> CustomTensor:
+    """Return the custom-level representation of any Binsparse tensor."""
+    container = InMemoryBinsparseContainer()
+    tensor.serialize(container, copy=False, alias=False)
+    custom = CustomTensor.parse(container, copy=False)
+    assert isinstance(custom, CustomTensor)
+    return custom
+
+
+def custom_to_alias(
+    tensor: BinsparseTensor, format_name: str | None = None
+) -> BinsparseTensor:
+    """Return the predefined alias for a custom tensor, when one exists."""
+    container = InMemoryBinsparseContainer()
+    tensor.serialize(container, copy=False, alias=True)
+    alias = BinsparseTensor.parse(container, copy=False)
+    if format_name is not None and alias.format != format_name:
+        raise ValueError(f"custom layout is not compatible with {format_name!r}")
+    return alias
+
+
 def binsparse_to_coo(
     tensor: CustomTensor,
 ) -> Iterator[tuple[tuple[Any, ...], Any]]:
@@ -200,7 +222,9 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
 
 
 __all__ = [
+    "alias_to_custom",
     "binsparse_to_coo",
     "coo_to_binsparse",
+    "custom_to_alias",
     "reformat",
 ]
