@@ -111,7 +111,7 @@ class BinsparseContainer(ABC):
                 f"buffer {key!r} has size {data.size}, expected {expected_size}"
             )
         shares_memory = np.shares_memory(data, encoded)
-        if copy is False and not shares_memory:
+        if copy is False and data.size > 0 and not shares_memory:
             raise ValueError(f"copy=False cannot decode buffer {key!r} without copying")
         if copy is True and shares_memory:
             return data.copy()
@@ -130,9 +130,7 @@ class BinsparseContainer(ABC):
     ) -> None:
         """Encode, create or replace a named array and record its data type."""
         def encode(data: np.ndarray) -> tuple[np.ndarray, str]:
-            if data.ndim == 1 and data.strides == (0,):
-                if data.size == 0:
-                    raise ValueError("cannot encode an empty ISO buffer")
+            if data.size > 0 and data.ndim == 1 and data.strides == (0,):
                 encoded, data_type = encode(data[:1].copy())
                 return encoded, f"iso[{data_type}]"
             if np.issubdtype(data.dtype, np.complexfloating):
@@ -149,7 +147,12 @@ class BinsparseContainer(ABC):
         source = np.asarray(value)
         encoded, data_type = encode(source)
         shares_memory = np.shares_memory(encoded, source)
-        if copy is False and not shares_memory and not data_type.startswith("iso["):
+        if (
+            copy is False
+            and encoded.size > 0
+            and not shares_memory
+            and not data_type.startswith("iso[")
+        ):
             raise ValueError(f"copy=False cannot encode buffer {key!r} without copying")
         if copy is True and shares_memory:
             encoded = encoded.copy()

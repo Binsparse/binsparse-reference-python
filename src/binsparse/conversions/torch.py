@@ -119,6 +119,7 @@ def to_torch(
 ) -> Any:
     """Convert a supported Binsparse tensor to PyTorch, optionally on *device*."""
     torch = _torch()
+    indices: tuple[np.ndarray, ...]
     if (
         isinstance(tensor, (DVECVector, DMATRMatrix, DMATCMatrix))
         or isinstance(tensor, CustomTensor)

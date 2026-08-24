@@ -28,7 +28,7 @@ class IndexableLevel(BinsparseLevel):
 
 @dataclass
 class ElementLevel(BinsparseLevel):
-    values: Any
+    values: np.ndarray
     level_desc: ClassVar[str] = "element"
     rank: ClassVar[int] = 0
 
@@ -42,8 +42,8 @@ class DenseLevel(IndexableLevel):
 @dataclass
 class SparseLevel(IndexableLevel):
     level: BinsparseLevel
-    indices: tuple[Any, ...]
-    pointers_to_next: Any | None = None
+    indices: tuple[np.ndarray, ...]
+    pointers_to_next: np.ndarray | None = None
     level_desc: ClassVar[str] = "sparse"
 
     def __post_init__(self) -> None:

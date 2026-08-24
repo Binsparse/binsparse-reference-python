@@ -58,6 +58,7 @@ def from_sparse(value: Any, *, copy: bool | None = None) -> BinsparseTensor:
 def to_sparse(tensor: BinsparseTensor, *, copy: bool | None = None) -> Any:
     """Convert a flat Binsparse COO tensor to a PyData/Sparse COO array."""
     sparse = _sparse()
+    indices: tuple[np.ndarray, ...]
     if isinstance(tensor, COORMatrix):
         indices = (tensor.indices_0, tensor.indices_1)
         values = tensor.values

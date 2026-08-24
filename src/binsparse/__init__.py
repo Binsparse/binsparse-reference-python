@@ -9,6 +9,7 @@ from .container import (
     ZarrBinsparseContainer,
 )
 from .errors import BinsparseParseError
+from .reformat import alias_to_custom, binsparse_to_coo, coo_to_binsparse
 from .tensor import (
     BinsparseLevel,
     BinsparseTensor,
@@ -60,4 +61,7 @@ __all__ = [
     "NPZBinsparseContainer",
     "SparseLevel",
     "ZarrBinsparseContainer",
+    "alias_to_custom",
+    "binsparse_to_coo",
+    "coo_to_binsparse",
 ]
