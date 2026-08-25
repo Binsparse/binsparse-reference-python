@@ -1,12 +1,7 @@
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent / "bin"))
-
-from reformat import (
+from binsparse.reformat import (
     binsparse_to_coo,
     coo_to_binsparse,
     reformat,

@@ -6,8 +6,8 @@ from typing import Any, cast
 
 import numpy as np
 
-from binsparse.container import InMemoryBinsparseContainer, str_to_dtype
-from binsparse.tensor import (
+from .container import InMemoryBinsparseContainer, str_to_dtype
+from .tensor import (
     _PREDEFINED_LEVELS,
     BinsparseLevel,
     BinsparseTensor,
