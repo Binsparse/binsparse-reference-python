@@ -10,9 +10,8 @@ from typing import Any
 
 import numpy as np
 
-from .io import load_binsparse, save_binsparse
-from .reformat import binsparse_to_coo, coo_to_binsparse, reformat
-from .tensor import (
+from binsparse.io import load_binsparse, save_binsparse
+from binsparse.tensor import (
     _PREDEFINED_LEVELS,
     BinsparseLevel,
     BinsparseTensor,
@@ -21,6 +20,7 @@ from .tensor import (
     ElementLevel,
     SparseLevel,
 )
+from reformat import binsparse_to_coo, coo_to_binsparse, reformat
 
 
 def npy_to_binsparse_main(argv: Sequence[str] | None = None) -> int:

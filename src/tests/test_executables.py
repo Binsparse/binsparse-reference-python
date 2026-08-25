@@ -9,7 +9,7 @@ from binsparse import load_binsparse
 from binsparse.tensor import CSRMatrix
 
 
-BIN = Path(__file__).parents[2] / "bin"
+BIN = Path(__file__).parent / "bin"
 
 
 def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
