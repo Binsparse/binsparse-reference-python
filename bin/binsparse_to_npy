@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Convert a Binsparse file to NumPy dense/pattern outputs."""
+
+from binsparse.cli import binsparse_to_npy_main
+
+
+if __name__ == "__main__":
+    raise SystemExit(binsparse_to_npy_main())

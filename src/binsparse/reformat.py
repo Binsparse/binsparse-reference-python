@@ -2,11 +2,11 @@
 
 from collections.abc import Iterable, Iterator
 from itertools import groupby, product
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
-from .container import InMemoryBinsparseContainer
+from .container import InMemoryBinsparseContainer, str_to_dtype
 from .tensor import (
     _PREDEFINED_LEVELS,
     BinsparseLevel,
@@ -43,7 +43,11 @@ def binsparse_to_coo(
     tensor: CustomTensor,
 ) -> Iterator[tuple[tuple[Any, ...], Any]]:
     """Iterate over a tensor's explicitly stored coordinate/value pairs."""
-    shape = tensor.shape
+    shape = (
+        tensor.shape
+        if tensor.transpose is None
+        else tuple(tensor.shape[dimension] for dimension in tensor.transpose)
+    )
     root = tensor.level
     assert root is not None
 
@@ -210,15 +214,59 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
     result.transpose = None if transpose is None else tuple(transpose)
     result.fill = source.fill
     result.fill_value = source.fill_value
-    if format_name == "custom":
-        return result
 
     container = InMemoryBinsparseContainer()
-    result.serialize(container, copy=False, alias=True)
+    result.serialize(container, copy=False, alias=format_name != "custom")
+    _recast_buffers(container, header.get("data_types"))
     alias = BinsparseTensor.parse(container, copy=False)
     if alias.format != format_name:
         raise ValueError(f"custom layout is not compatible with {format_name!r}")
     return alias
+
+
+def _recast_buffers(container: InMemoryBinsparseContainer, data_types: Any) -> None:
+    if not isinstance(data_types, dict):
+        return
+    for key, data_type in data_types.items():
+        if key not in container.data_types:
+            continue
+        value = container.read_buffer(key, _expected_size(container, key))
+        container.write_buffer(key, _cast_buffer(value, data_type), copy=False)
+    container.write_header(container.read_header())
+
+
+def _expected_size(
+    container: InMemoryBinsparseContainer,
+    key: str,
+) -> int | None:
+    if key == "fill_value":
+        return 1
+    if key == "values":
+        return int(container.read_header()["number_of_stored_values"])
+    return None
+
+
+def _cast_buffer(value: np.ndarray, data_type: Any) -> np.ndarray:
+    if not isinstance(data_type, str):
+        raise TypeError("Binsparse data type must be a string")
+    if data_type.startswith("iso[") and data_type.endswith("]"):
+        result = _cast_buffer(value, data_type[4:-1])
+        if result.size == 0:
+            return result
+        scalar = result.reshape(-1)[0]
+        if not np.all(result == scalar):
+            raise ValueError("ISO data type requires identical stored values")
+        return np.broadcast_to(np.asarray([scalar], dtype=result.dtype), result.shape)
+    if data_type.startswith("complex[") and data_type.endswith("]"):
+        inner = data_type[8:-1]
+        if inner == "float32":
+            return np.asarray(value, dtype=np.dtype("complex64"))
+        if inner == "float64":
+            return np.asarray(value, dtype=np.dtype("complex128"))
+    try:
+        return np.asarray(value, dtype=cast(np.dtype[Any], str_to_dtype[data_type]))
+    except KeyError as error:
+        raise ValueError(f"unknown Binsparse data type {data_type!r}") from error
 
 
 __all__ = [

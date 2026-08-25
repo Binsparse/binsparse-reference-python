@@ -97,6 +97,57 @@ def test_reformat_changes_predefined_layout() -> None:
     np.testing.assert_array_equal(result.values, [6, 5, 7])
 
 
+def test_reformat_applies_requested_data_types() -> None:
+    tensor = CSRMatrix(
+        (3, 4),
+        3,
+        fill=True,
+        fill_value=-1,
+        pointers_to_1=np.array([0, 1, 1, 3], dtype=np.uint64),
+        indices_1=np.array([2, 0, 3], dtype=np.uint64),
+        values=np.array([5, 6, 7], dtype=np.int64),
+    )
+
+    result = reformat(
+        tensor,
+        {
+            "format": "CSC",
+            "data_types": {
+                "pointers_to_1": "uint32",
+                "indices_1": "uint16",
+                "values": "float32",
+                "fill_value": "int16",
+            },
+        },
+    )
+
+    assert isinstance(result, CSCMatrix)
+    assert result.pointers_to_1.dtype == np.uint32
+    assert result.indices_1.dtype == np.uint16
+    assert result.values.dtype == np.float32
+    assert isinstance(result.fill_value, np.int16)
+
+
+def test_reformat_applies_iso_data_type() -> None:
+    tensor = CSRMatrix(
+        (3, 4),
+        3,
+        pointers_to_1=np.array([0, 1, 1, 3], dtype=np.uint64),
+        indices_1=np.array([2, 0, 3], dtype=np.uint64),
+        values=np.array([5, 5, 5], dtype=np.int64),
+    )
+
+    result = reformat(
+        tensor,
+        {"format": "CSR", "data_types": {"values": "iso[int16]"}},
+    )
+
+    assert isinstance(result, CSRMatrix)
+    assert result.values.dtype == np.int16
+    assert result.values.strides == (0,)
+    np.testing.assert_array_equal(result.values, [5, 5, 5])
+
+
 def test_reformat_accepts_custom_descriptor() -> None:
     tensor = CSRMatrix(
         (2, 3),

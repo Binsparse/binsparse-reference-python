@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Round-trip a Binsparse file through the package representation."""
+
+from binsparse.cli import binsparse_to_binsparse_main
+
+
+if __name__ == "__main__":
+    raise SystemExit(binsparse_to_binsparse_main())
