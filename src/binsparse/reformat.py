@@ -18,6 +18,16 @@ from .tensor import (
 )
 
 
+_FORMAT_CANONICAL = {
+    "DMAT": "DMATR",
+    "COO": "COOR",
+}
+
+
+def _canonical_format(format_name: str) -> str:
+    return _FORMAT_CANONICAL.get(format_name, format_name)
+
+
 def alias_to_custom(tensor: BinsparseTensor) -> CustomTensor:
     """Return the custom-level representation of any Binsparse tensor."""
     container = InMemoryBinsparseContainer()
@@ -34,7 +44,10 @@ def custom_to_alias(
     container = InMemoryBinsparseContainer()
     tensor.serialize(container, copy=False, alias=True)
     alias = BinsparseTensor.parse(container, copy=False)
-    if format_name is not None and alias.format != format_name:
+    if (
+        format_name is not None
+        and _canonical_format(alias.format) != _canonical_format(format_name)
+    ):
         raise ValueError(f"custom layout is not compatible with {format_name!r}")
     return alias
 
@@ -219,7 +232,7 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
     result.serialize(container, copy=False, alias=format_name != "custom")
     _recast_buffers(container, header.get("data_types"))
     alias = BinsparseTensor.parse(container, copy=False)
-    if alias.format != format_name:
+    if _canonical_format(alias.format) != _canonical_format(format_name):
         raise ValueError(f"custom layout is not compatible with {format_name!r}")
     return alias
 

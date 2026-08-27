@@ -7,10 +7,12 @@ from binsparse.reformat import (
     reformat,
 )
 from binsparse.tensor import (
+    COORMatrix,
     CSCMatrix,
     CSRMatrix,
     CustomTensor,
     DenseLevel,
+    DMATRMatrix,
     ElementLevel,
     SparseLevel,
 )
@@ -95,6 +97,26 @@ def test_reformat_changes_predefined_layout() -> None:
     np.testing.assert_array_equal(result.pointers_to_1, [0, 1, 1, 2, 3])
     np.testing.assert_array_equal(result.indices_1, [2, 0, 2])
     np.testing.assert_array_equal(result.values, [6, 5, 7])
+
+
+@pytest.mark.parametrize(
+    ("format_name", "expected_type"),
+    [("DMAT", DMATRMatrix), ("COO", COORMatrix)],
+)
+def test_reformat_accepts_predefined_format_aliases(
+    format_name: str, expected_type: type,
+) -> None:
+    tensor = CSRMatrix(
+        (2, 2),
+        4,
+        pointers_to_1=np.array([0, 2, 4], dtype=np.uint64),
+        indices_1=np.array([0, 1, 0, 1], dtype=np.uint64),
+        values=np.array([4, 0, 0, 9], dtype=np.int8),
+    )
+
+    result = reformat(tensor, {"format": format_name})
+
+    assert isinstance(result, expected_type)
 
 
 def test_reformat_applies_requested_data_types() -> None:
