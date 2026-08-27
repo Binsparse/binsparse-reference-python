@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from binsparse import load_binsparse, save_binsparse
-from binsparse.tensor import CSRMatrix, CustomTensor
+from binsparse.container import HDF5BinsparseContainer
+from binsparse.tensor import CSRMatrix, CustomTensor, DVECVector
 
 
 def _csr() -> CSRMatrix:
@@ -48,6 +49,28 @@ def test_hdf5_file_round_trip_dispatches_by_extension(tmp_path) -> None:
     np.testing.assert_array_equal(result.pointers_to_1, [0, 1, 1, 3])
     np.testing.assert_array_equal(result.indices_1, [2, 0, 3])
     np.testing.assert_array_equal(result.values, [5, 6, 7])
+
+
+def test_hdf5_bint8_uses_plain_uint8_dataset(tmp_path) -> None:
+    import h5py
+
+    path = tmp_path / "boolean.h5"
+    source = np.array([True, False, True], dtype=np.bool_)
+    save_binsparse(DVECVector((3,), 3, values=source), path)
+
+    with h5py.File(path, "r") as file:
+        assert file["values"].dtype == np.dtype("uint8")
+        assert file["values"].dtype.metadata is None
+        document = json.loads(file.attrs["binsparse"])
+        assert document["binsparse"]["data_types"]["values"] == "bint8"
+        decoded = HDF5BinsparseContainer(file).read_buffer("values")
+        assert decoded.dtype == np.dtype("bool")
+        np.testing.assert_array_equal(decoded, source)
+
+    result = load_binsparse(path)
+    assert isinstance(result, DVECVector)
+    assert result.values.dtype == np.dtype("bool")
+    np.testing.assert_array_equal(result.values, source)
 
 
 def test_file_io_rejects_unknown_extension(tmp_path) -> None:

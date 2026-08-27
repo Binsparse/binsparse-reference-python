@@ -149,6 +149,8 @@ class BinsparseContainer(ABC):
             if data.size > 0 and data.ndim == 1 and data.strides == (0,):
                 encoded, data_type = encode(data[:1].copy())
                 return encoded, f"iso[{data_type}]"
+            if data.dtype == np.bool_:
+                return data.astype(np.uint8), "bint8"
             if np.issubdtype(data.dtype, np.complexfloating):
                 if data.dtype not in {np.dtype("complex64"), np.dtype("complex128")}:
                     raise TypeError(f"unsupported complex dtype: {data.dtype}")

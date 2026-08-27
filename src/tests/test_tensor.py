@@ -122,6 +122,21 @@ def test_complex_buffer_is_decoded_by_container_layer() -> None:
     )
 
 
+def test_bint8_buffer_is_encoded_by_container_layer() -> None:
+    archive: dict[str, np.ndarray] = {}
+    source = np.array([True, False, True], dtype=np.bool_)
+    container = NPZBinsparseContainer(archive)
+
+    container.write_buffer("values", source)
+    container.write_header({})
+
+    assert archive["values"].dtype == np.dtype("uint8")
+    assert container.read_header()["data_types"]["values"] == "bint8"
+    decoded = container.read_buffer("values")
+    assert decoded.dtype == np.dtype("bool")
+    np.testing.assert_array_equal(decoded, source)
+
+
 def test_nested_iso_complex_buffer_round_trip() -> None:
     archive: dict[str, np.ndarray] = {}
     values = np.broadcast_to(np.array([1 + 2j], dtype=np.complex64), (3,))
