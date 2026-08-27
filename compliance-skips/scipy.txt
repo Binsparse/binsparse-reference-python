@@ -1,0 +1,10 @@
+# SciPy only represents two-dimensional CSR, CSC, and COO arrays with zero fill.
+# The generated suite varies fill values within each test ID, so unsupported cases
+# cannot be isolated more narrowly with the suite's ID-based skip mechanism.
+test_custom_0d
+test_custom_1d
+test_custom_2d
+test_custom_3d
+test_custom_nd
+test_predefined_1d
+test_predefined_2d

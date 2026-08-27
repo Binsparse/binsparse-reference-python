@@ -1,0 +1,16 @@
+# PyData/Sparse has no scalar COO and custom tests mix nested/non-COO levels.
+test_custom_0d
+test_custom_1d
+test_custom_2d
+test_custom_3d
+test_custom_nd
+# Dense and compressed predefined formats are not PyData/Sparse COO tensors.
+[DVEC-
+[CVEC-
+[DMAT-
+[DMATR-
+[DMATC-
+[CSR-
+[CSC-
+[DCSR-
+[DCSC-

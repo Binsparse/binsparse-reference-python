@@ -1,0 +1,4 @@
+# NumPy has no explicit-storage pattern or fill metadata. Every generated test
+# varies one or both within a single test ID, so the suite cannot isolate a
+# supported NumPy case using its ID-substring skip mechanism.
+test_executables.py

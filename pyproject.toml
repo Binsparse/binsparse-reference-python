@@ -16,10 +16,14 @@ conversions = ["scipy", "torch", "sparse"]
 
 [dependency-groups]
 test = [
+    "hypothesis>=6.165.10,<7",
     "pytest>=7.4.4",
     "pytest-cov>=4.1.0",
     "pytest-xdist>=3.5.0",
     "mypy>=1.15,<2",
+    "scipy",
+    "sparse",
+    "zarr>=3.3.0,<4",
 ]
 pre-commit = [
     "pre-commit>=3.6.0,<5",
@@ -75,6 +79,17 @@ testpaths = ["src"]
 junit_family = "xunit2"
 strict_config = true
 strict_markers = true
+markers = [
+    "npz: tests using the NPZ binary container",
+    "zarr: tests using the Zarr binary container",
+    "hdf5: tests using the HDF5 binary container",
+    "bool_values: generated values use bint8",
+    "signed_integer: generated values use a signed integer dtype",
+    "unsigned_integer: generated values use an unsigned integer dtype",
+    "floating: generated values use a floating dtype",
+    "complex_values: generated values use a complex dtype",
+    "iso: generated values use an iso dtype",
+]
 
 [tool.pixi.feature.test.tasks.test]
 args = [
@@ -99,6 +114,42 @@ default-environment = "benchmark"
 [tool.pixi.feature.test.tasks.type-check]
 cmd = "python -m mypy"
 default-environment = "test"
+
+[tool.pixi.feature.test.tasks.compliance-reference]
+cmd = "pytest -n logical --skips-file compliance-skips/reference.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
+env = { BINSPARSE_BIN = "$PIXI_PROJECT_ROOT/bin" }
+default-environment = "test"
+depends-on = ["compliance-suite"]
+
+[tool.pixi.feature.test.tasks.compliance-numpy]
+cmd = "pytest -n logical --skips-file compliance-skips/numpy.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
+env = { NPY_TO_BINSPARSE = "python -m binsparse.framework_cli numpy npy_to_binsparse", BINSPARSE_TO_NPY = "python -m binsparse.framework_cli numpy binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m binsparse.framework_cli numpy binsparse_to_binsparse" }
+default-environment = "test"
+depends-on = ["compliance-suite"]
+
+[tool.pixi.feature.test.tasks.compliance-scipy]
+cmd = "pytest -n logical --skips-file compliance-skips/scipy.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
+env = { NPY_TO_BINSPARSE = "python -m binsparse.framework_cli scipy npy_to_binsparse", BINSPARSE_TO_NPY = "python -m binsparse.framework_cli scipy binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m binsparse.framework_cli scipy binsparse_to_binsparse" }
+default-environment = "test"
+depends-on = ["compliance-suite"]
+
+[tool.pixi.feature.test.tasks.compliance-sparse]
+cmd = "pytest -n logical --skips-file compliance-skips/sparse.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
+env = { NPY_TO_BINSPARSE = "python -m binsparse.framework_cli sparse npy_to_binsparse", BINSPARSE_TO_NPY = "python -m binsparse.framework_cli sparse binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m binsparse.framework_cli sparse binsparse_to_binsparse" }
+default-environment = "test"
+depends-on = ["compliance-suite"]
+
+[tool.pixi.feature.test.tasks.compliance-suite]
+cmd = "sh -c 'test -d .pixi/binsparse-tests/.git || git clone --depth 1 https://github.com/Binsparse/binsparse-tests.git .pixi/binsparse-tests'"
+default-environment = "test"
+
+[tool.pixi.feature.test.tasks.compliance]
+depends-on = [
+    "compliance-reference",
+    "compliance-numpy",
+    "compliance-scipy",
+    "compliance-sparse",
+]
 
 [tool.pixi.feature.docs.tasks.serve-docs]
 cmd = "mkdocs serve --strict"
