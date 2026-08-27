@@ -145,35 +145,44 @@ class BinsparseContainer(ABC):
         copy: bool | None = None,
     ) -> None:
         """Encode, create or replace a named array and record its data type."""
-        def encode(data: np.ndarray) -> tuple[np.ndarray, str]:
-            if data.size > 0 and data.ndim == 1 and data.strides == (0,):
-                encoded, data_type = encode(data[:1].copy())
+        def encode(
+            data: np.ndarray,
+            copy: bool | None,
+            *,
+            detect_iso: bool = True,
+        ) -> tuple[np.ndarray, str]:
+            if (
+                detect_iso
+                and data.size > 0
+                and data.ndim == 1
+                and data.strides == (0,)
+            ):
+                encoded, data_type = encode(data[:1], copy, detect_iso=False)
                 return encoded, f"iso[{data_type}]"
             if data.dtype == np.bool_:
-                return data.astype(np.uint8), "bint8"
+                encoded = data.view(np.uint8)
+                return encoded.copy() if copy is True else encoded, "bint8"
             if np.issubdtype(data.dtype, np.complexfloating):
                 if data.dtype not in {np.dtype("complex64"), np.dtype("complex128")}:
                     raise TypeError(f"unsupported complex dtype: {data.dtype}")
+                if not data.flags.c_contiguous:
+                    if copy is False:
+                        raise ValueError(
+                            f"copy=False cannot encode buffer {key!r} without copying"
+                        )
+                    data = np.ascontiguousarray(data)
                 dtype = np.dtype("float32" if data.dtype == np.complex64 else "float64")
-                encoded, data_type = encode(np.ascontiguousarray(data).view(dtype))
+                encoded, data_type = encode(data.view(dtype), copy, detect_iso=False)
                 return encoded, f"complex[{data_type}]"
             try:
-                return data, dtype_to_str[data.dtype]
+                data_type = dtype_to_str[data.dtype]
             except KeyError as error:
                 raise TypeError(f"unsupported Binsparse dtype: {data.dtype}") from error
+            return data.copy() if copy is True else data, data_type
 
-        source = np.asarray(value)
-        encoded, data_type = encode(source)
-        shares_memory = np.shares_memory(encoded, source)
-        if (
-            copy is False
-            and encoded.size > 0
-            and not shares_memory
-            and not data_type.startswith("iso[")
-        ):
-            raise ValueError(f"copy=False cannot encode buffer {key!r} without copying")
-        if copy is True and shares_memory:
-            encoded = encoded.copy()
+        if not isinstance(value, np.ndarray):
+            raise TypeError("buffer value must be a NumPy ndarray")
+        encoded, data_type = encode(value, copy)
         self._write_buffer(key, encoded)
         self.data_types[key] = data_type
 

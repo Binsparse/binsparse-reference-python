@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
+
 from binsparse.container import InMemoryBinsparseContainer, NPZBinsparseContainer
 from binsparse.errors import BinsparseParseError
+from binsparse.reformat import reformat
 from binsparse.tensor import (
     BinsparseTensor,
     CSRMatrix,
@@ -127,14 +129,40 @@ def test_bint8_buffer_is_encoded_by_container_layer() -> None:
     source = np.array([True, False, True], dtype=np.bool_)
     container = NPZBinsparseContainer(archive)
 
-    container.write_buffer("values", source)
+    container.write_buffer("values", source, copy=False)
     container.write_header({})
 
     assert archive["values"].dtype == np.dtype("uint8")
+    assert np.shares_memory(archive["values"], source)
     assert container.read_header()["data_types"]["values"] == "bint8"
     decoded = container.read_buffer("values")
     assert decoded.dtype == np.dtype("bool")
     np.testing.assert_array_equal(decoded, source)
+
+
+def test_bint8_reformat_allows_required_container_copies() -> None:
+    source = CustomTensor(
+        (2,),
+        2,
+        fill=True,
+        fill_value=np.bool_(False),
+        level=DenseLevel(
+            1,
+            ElementLevel(np.array([True, False], dtype=np.bool_)),
+        ),
+    )
+
+    result = reformat(
+        source,
+        {
+            "format": "DVEC",
+            "data_types": {"values": "bint8"},
+        },
+    )
+
+    assert isinstance(result, DVECVector)
+    assert result.values.dtype == np.dtype("bool")
+    np.testing.assert_array_equal(result.values, [True, False])
 
 
 def test_nested_iso_complex_buffer_round_trip() -> None:

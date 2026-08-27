@@ -17,7 +17,6 @@ from .tensor import (
     SparseLevel,
 )
 
-
 _FORMAT_CANONICAL = {
     "DMAT": "DMATR",
     "COO": "COOR",
@@ -31,8 +30,8 @@ def _canonical_format(format_name: str) -> str:
 def alias_to_custom(tensor: BinsparseTensor) -> CustomTensor:
     """Return the custom-level representation of any Binsparse tensor."""
     container = InMemoryBinsparseContainer()
-    tensor.serialize(container, copy=False, alias=False)
-    custom = CustomTensor.parse(container, copy=False)
+    tensor.serialize(container, alias=False)
+    custom = CustomTensor.parse(container)
     assert isinstance(custom, CustomTensor)
     return custom
 
@@ -42,8 +41,8 @@ def custom_to_alias(
 ) -> BinsparseTensor:
     """Return the predefined alias for a custom tensor, when one exists."""
     container = InMemoryBinsparseContainer()
-    tensor.serialize(container, copy=False, alias=True)
-    alias = BinsparseTensor.parse(container, copy=False)
+    tensor.serialize(container, alias=True)
+    alias = BinsparseTensor.parse(container)
     if (
         format_name is not None
         and _canonical_format(alias.format) != _canonical_format(format_name)
@@ -193,8 +192,8 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
         source = tensor
     else:
         container = InMemoryBinsparseContainer()
-        tensor.serialize(container, copy=False, alias=False)
-        parsed = CustomTensor.parse(container, copy=False)
+        tensor.serialize(container, alias=False)
+        parsed = CustomTensor.parse(container)
         assert isinstance(parsed, CustomTensor)
         source = parsed
 
@@ -229,9 +228,9 @@ def reformat(tensor: BinsparseTensor, header: dict[str, Any]) -> BinsparseTensor
     result.fill_value = source.fill_value
 
     container = InMemoryBinsparseContainer()
-    result.serialize(container, copy=False, alias=format_name != "custom")
+    result.serialize(container, alias=format_name != "custom")
     _recast_buffers(container, header.get("data_types"))
-    alias = BinsparseTensor.parse(container, copy=False)
+    alias = BinsparseTensor.parse(container)
     if _canonical_format(alias.format) != _canonical_format(format_name):
         raise ValueError(f"custom layout is not compatible with {format_name!r}")
     return alias
@@ -244,7 +243,7 @@ def _recast_buffers(container: InMemoryBinsparseContainer, data_types: Any) -> N
         if key not in container.data_types:
             continue
         value = container.read_buffer(key, _expected_size(container, key))
-        container.write_buffer(key, _cast_buffer(value, data_type), copy=False)
+        container.write_buffer(key, _cast_buffer(value, data_type))
     container.write_header(container.read_header())
 
 
