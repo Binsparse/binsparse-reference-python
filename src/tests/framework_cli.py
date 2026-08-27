@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from .cli import _load_fill_value, _load_header, _npy_from_tensor, _tensor_from_npy
-from .conversions import (
+from binsparse.conversions import (
     from_numpy,
     from_scipy,
     from_sparse,
@@ -17,9 +17,9 @@ from .conversions import (
     to_scipy,
     to_sparse,
 )
-from .io import load_binsparse, save_binsparse
+from binsparse.io import load_binsparse, save_binsparse
 from .reformat import alias_to_custom
-from .tensor import BinsparseTensor
+from binsparse.tensor import BinsparseTensor
 
 Converter = tuple[Callable[[BinsparseTensor], Any], Callable[[Any], BinsparseTensor]]
 

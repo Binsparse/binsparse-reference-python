@@ -123,19 +123,19 @@ depends-on = ["compliance-suite"]
 
 [tool.pixi.feature.test.tasks.compliance-numpy]
 cmd = "pytest -n logical --skips-file compliance-skips/numpy.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
-env = { NPY_TO_BINSPARSE = "python -m binsparse.framework_cli numpy npy_to_binsparse", BINSPARSE_TO_NPY = "python -m binsparse.framework_cli numpy binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m binsparse.framework_cli numpy binsparse_to_binsparse" }
+env = { NPY_TO_BINSPARSE = "python -m tests.framework_cli numpy npy_to_binsparse", BINSPARSE_TO_NPY = "python -m tests.framework_cli numpy binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m tests.framework_cli numpy binsparse_to_binsparse" }
 default-environment = "test"
 depends-on = ["compliance-suite"]
 
 [tool.pixi.feature.test.tasks.compliance-scipy]
 cmd = "pytest -n logical --skips-file compliance-skips/scipy.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
-env = { NPY_TO_BINSPARSE = "python -m binsparse.framework_cli scipy npy_to_binsparse", BINSPARSE_TO_NPY = "python -m binsparse.framework_cli scipy binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m binsparse.framework_cli scipy binsparse_to_binsparse" }
+env = { NPY_TO_BINSPARSE = "python -m tests.framework_cli scipy npy_to_binsparse", BINSPARSE_TO_NPY = "python -m tests.framework_cli scipy binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m tests.framework_cli scipy binsparse_to_binsparse" }
 default-environment = "test"
 depends-on = ["compliance-suite"]
 
 [tool.pixi.feature.test.tasks.compliance-sparse]
 cmd = "pytest -n logical --skips-file compliance-skips/sparse.txt --override-ini addopts= .pixi/binsparse-tests/binsparse_tests/test_executables.py"
-env = { NPY_TO_BINSPARSE = "python -m binsparse.framework_cli sparse npy_to_binsparse", BINSPARSE_TO_NPY = "python -m binsparse.framework_cli sparse binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m binsparse.framework_cli sparse binsparse_to_binsparse" }
+env = { NPY_TO_BINSPARSE = "python -m tests.framework_cli sparse npy_to_binsparse", BINSPARSE_TO_NPY = "python -m tests.framework_cli sparse binsparse_to_npy", BINSPARSE_TO_BINSPARSE = "python -m tests.framework_cli sparse binsparse_to_binsparse" }
 default-environment = "test"
 depends-on = ["compliance-suite"]
 

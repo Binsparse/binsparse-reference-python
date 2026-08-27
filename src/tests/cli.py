@@ -10,9 +10,9 @@ from typing import Any
 
 import numpy as np
 
-from .io import load_binsparse, save_binsparse
+from binsparse.io import load_binsparse, save_binsparse
 from .reformat import binsparse_to_coo, coo_to_binsparse, reformat
-from .tensor import (
+from binsparse.tensor import (
     _PREDEFINED_LEVELS,
     BinsparseLevel,
     BinsparseTensor,

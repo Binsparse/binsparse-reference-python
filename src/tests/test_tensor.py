@@ -3,7 +3,7 @@ import pytest
 
 from binsparse.container import InMemoryBinsparseContainer, NPZBinsparseContainer
 from binsparse.errors import BinsparseParseError
-from binsparse.reformat import reformat
+from tests.reformat import reformat
 from binsparse.tensor import (
     BinsparseTensor,
     CSRMatrix,
