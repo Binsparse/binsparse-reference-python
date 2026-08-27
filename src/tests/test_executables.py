@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -53,6 +54,7 @@ def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
 
     subprocess.run(
         [
+            sys.executable,
             BIN / "npy_to_binsparse",
             tensor_in,
             pattern_in,
@@ -72,6 +74,7 @@ def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
 
     subprocess.run(
         [
+            sys.executable,
             BIN / "binsparse_to_npy",
             binsparse_out,
             dense_out,
@@ -87,6 +90,7 @@ def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
 
     subprocess.run(
         [
+            sys.executable,
             BIN / "binsparse_to_binsparse",
             binsparse_out,
             roundtrip_out,

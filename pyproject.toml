@@ -5,7 +5,7 @@ requires-python = ">= 3.11"
 version = "0.1.0"
 dependencies = [
     "h5py>=3.16.0,<4",
-    "numpy>=2.5.2,<3",
+    "numpy>=2,<3",
 ]
 
 [project.optional-dependencies]

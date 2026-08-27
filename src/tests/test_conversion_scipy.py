@@ -79,7 +79,7 @@ def test_scipy_copy_policy() -> None:
     assert not np.shares_memory(copied_result.data, shared.values)
 
 
-def test_scipy_copy_false_rejects_required_canonicalization() -> None:
+def test_scipy_copy_false_rejects_required_input_canonicalization() -> None:
     source = scipy_sparse.coo_array(
         (np.array([1, 2]), (np.array([0, 0]), np.array([1, 1]))),
         shape=(2, 2),
@@ -87,6 +87,24 @@ def test_scipy_copy_false_rejects_required_canonicalization() -> None:
     with pytest.raises(ValueError, match="canonicalize"):
         from_scipy(source, copy=False)
 
+
+
+def test_scipy_canonical_coo_copy_false_shares_buffers() -> None:
+    source = scipy_sparse.coo_array(
+        (np.array([3]), (np.array([0]), np.array([1]))),
+        shape=(2, 2),
+    )
+    source.sum_duplicates()
+
+    tensor = from_scipy(source, copy=False)
+
+    assert isinstance(tensor, COORMatrix)
+    assert np.shares_memory(tensor.values, source.data)
+    assert np.shares_memory(tensor.indices_0, source.row)
+    assert np.shares_memory(tensor.indices_1, source.col)
+
+
+def test_scipy_coor_copy_false_preserves_canonical_buffers() -> None:
     tensor = COORMatrix(
         (2, 2),
         1,
@@ -94,5 +112,9 @@ def test_scipy_copy_false_rejects_required_canonicalization() -> None:
         indices_1=np.array([1]),
         values=np.array([3]),
     )
-    with pytest.raises(ValueError, match="canonicalize"):
-        to_scipy(tensor, copy=False)
+    result = to_scipy(tensor, copy=False)
+
+    assert result.has_canonical_format
+    assert np.shares_memory(result.data, tensor.values)
+    assert np.shares_memory(result.row, tensor.indices_0)
+    assert np.shares_memory(result.col, tensor.indices_1)

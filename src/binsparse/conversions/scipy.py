@@ -87,6 +87,9 @@ def to_scipy(tensor: BinsparseTensor, *, copy: bool | None = None) -> Any:
             shape=tensor.shape,
             copy=copy,
         )
+        # Binsparse COOR requires row-major sorted, duplicate-free coordinates.
+        # SciPy's constructor cannot infer that invariant from buffer inputs.
+        result.has_canonical_format = True
     else:
         raise TypeError(f"cannot convert {type(tensor).__name__} to SciPy")
     return result
