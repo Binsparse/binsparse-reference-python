@@ -8,7 +8,12 @@ from typing import Any
 
 import numpy as np
 
-from .cli import _load_fill_value, _load_header, _npy_from_tensor, _tensor_from_npy
+from .converters import (
+    _load_fill_value,
+    _load_header,
+    _npy_from_tensor,
+    _tensor_from_npy,
+)
 from binsparse.conversions import (
     from_numpy,
     from_scipy,
