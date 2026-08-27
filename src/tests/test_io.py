@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 
@@ -19,6 +21,10 @@ def test_npz_file_round_trip_dispatches_by_extension(tmp_path) -> None:
     path = tmp_path / "tensor.npz"
 
     save_binsparse(_csr(), path, alias=False)
+    with np.load(path, allow_pickle=False) as archive:
+        document = json.loads(str(archive["binsparse"].item()))
+    assert set(document) == {"binsparse"}
+    assert document["binsparse"]["format"] == "custom"
     result = load_binsparse(path, alias=False)
 
     assert isinstance(result, CustomTensor)
@@ -30,6 +36,12 @@ def test_hdf5_file_round_trip_dispatches_by_extension(tmp_path) -> None:
     path = tmp_path / "tensor.h5"
 
     save_binsparse(_csr(), path)
+    import h5py
+
+    with h5py.File(path, "r") as file:
+        document = json.loads(file.attrs["binsparse"])
+    assert set(document) == {"binsparse"}
+    assert document["binsparse"]["format"] == "CSR"
     result = load_binsparse(path)
 
     assert isinstance(result, CSRMatrix)

@@ -16,6 +16,22 @@ from .errors import BinsparseParseError
 BINSPARSE_HEADER = "binsparse"
 
 
+def _wrap_header(value: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {BINSPARSE_HEADER: value}
+
+
+def _unwrap_header(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise BinsparseParseError("Binsparse metadata must be a JSON object")
+    try:
+        header = value[BINSPARSE_HEADER]
+    except KeyError as error:
+        raise BinsparseParseError("missing 'binsparse' JSON namespace") from error
+    if not isinstance(header, dict):
+        raise BinsparseParseError("the 'binsparse' JSON namespace must be an object")
+    return header
+
+
 dtype_to_str = {
     np.dtype("int8"): "int8",
     np.dtype("int16"): "int16",
@@ -215,11 +231,11 @@ class HDF5BinsparseContainer(BinsparseContainer):
             value = self.group.attrs[BINSPARSE_HEADER]
         except KeyError as error:
             raise KeyError("HDF5 group has no 'binsparse' attribute") from error
-        return json.loads(value)
+        return _unwrap_header(json.loads(value))
 
     def _write_header(self, value: dict[str, Any]) -> None:
         self.group.attrs[BINSPARSE_HEADER] = json.dumps(
-            value, indent=2, sort_keys=True, separators=(",", ": ")
+            _wrap_header(value), indent=2, sort_keys=True, separators=(",", ": ")
         )
 
     def _read_buffer(self, key: str) -> np.ndarray:
@@ -239,12 +255,12 @@ class ZarrBinsparseContainer(BinsparseContainer):
 
     def _read_header(self) -> dict[str, Any]:
         try:
-            return self.group.attrs[BINSPARSE_HEADER]
+            return _unwrap_header(self.group.attrs[BINSPARSE_HEADER])
         except KeyError as error:
             raise KeyError("Zarr group has no 'binsparse' attribute") from error
 
     def _write_header(self, value: dict[str, Any]) -> None:
-        self.group.attrs[BINSPARSE_HEADER] = value
+        self.group.attrs[BINSPARSE_HEADER] = _wrap_header(value)
 
     def _read_buffer(self, key: str) -> np.ndarray:
         return np.asarray(self.group[key][...])
@@ -269,11 +285,16 @@ class NPZBinsparseContainer(BinsparseContainer):
             value = self.file[BINSPARSE_HEADER]
         except KeyError as error:
             raise KeyError("NPZ archive has no 'binsparse' entry") from error
-        return json.loads(str(value.item()))
+        return _unwrap_header(json.loads(str(value.item())))
 
     def _write_header(self, value: dict[str, Any]) -> None:
         self.file[BINSPARSE_HEADER] = np.asarray(
-            json.dumps(value, indent=2, sort_keys=True, separators=(",", ": "))
+            json.dumps(
+                _wrap_header(value),
+                indent=2,
+                sort_keys=True,
+                separators=(",", ": "),
+            )
         )
 
     def _read_buffer(self, key: str) -> np.ndarray:
