@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from cli.reformat import (
+from reference_cli.reformat import (
     binsparse_to_coo,
     coo_to_binsparse,
     reformat,

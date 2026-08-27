@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Convert NumPy dense/pattern inputs to a Binsparse file."""
 
-from cli.converters import npy_to_binsparse_main
+from reference_cli.converters import npy_to_binsparse_main
 
 
 if __name__ == "__main__":
