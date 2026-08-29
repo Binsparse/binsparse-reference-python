@@ -10,7 +10,7 @@ import numpy as np
 
 from .container import BinsparseContainer
 from .errors import BinsparseParseError
-from .version import BINSPARSE_VERSION
+from .version import BINSPARSE_VERSION, check_binsparse_version
 
 
 class BinsparseLevel:
@@ -85,11 +85,7 @@ class BinsparseTensor(ABC):
         missing = next((key for key in required if key not in header), None)
         if missing is not None:
             raise BinsparseParseError(f"missing required descriptor key {missing!r}")
-        if header["version"] != BINSPARSE_VERSION:
-            raise BinsparseParseError(
-                f"unsupported Binsparse version {header['version']!r}; "
-                f"expected {BINSPARSE_VERSION!r}"
-            )
+        check_binsparse_version(header["version"])
         format_name = header["format"]
         try:
             if hasattr(cls, "format"):
