@@ -2,7 +2,7 @@
 authors = [{name = "Willow Ahrens", email = "ahrens@gatech.edu"}]
 name = "binsparse"
 requires-python = ">= 3.11"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
     "h5py>=3.16.0,<4",
     "numpy>=2,<3",
