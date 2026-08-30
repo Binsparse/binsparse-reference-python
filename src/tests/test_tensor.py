@@ -3,7 +3,6 @@ import pytest
 
 from binsparse.container import InMemoryBinsparseContainer, NPZBinsparseContainer
 from binsparse.errors import BinsparseParseError
-from reference_cli.reformat import reformat
 from binsparse.tensor import (
     BinsparseTensor,
     CSRMatrix,
@@ -13,6 +12,17 @@ from binsparse.tensor import (
     ElementLevel,
     SparseLevel,
 )
+from reference_cli.reformat import reformat
+
+
+def _dvec_container_with_version(version: object) -> InMemoryBinsparseContainer:
+    header: dict[str, object] = {}
+    buffers: list[np.ndarray] = []
+    DVECVector((2,), 2, values=np.array([1.0, 2.0])).serialize(
+        InMemoryBinsparseContainer(header, buffers)
+    )
+    header["version"] = version
+    return InMemoryBinsparseContainer(header, buffers)
 
 
 def test_csr_round_trip() -> None:
@@ -37,6 +47,39 @@ def test_csr_round_trip() -> None:
     np.testing.assert_array_equal(parsed.pointers_to_1, original.pointers_to_1)
     np.testing.assert_array_equal(parsed.indices_1, original.indices_1)
     np.testing.assert_array_equal(parsed.values, original.values)
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["0.1.0", "0.1.0+roundtrip.1"],
+)
+def test_parse_accepts_semver_compatible_versions(version: str) -> None:
+    parsed = BinsparseTensor.parse(_dvec_container_with_version(version))
+
+    assert isinstance(parsed, DVECVector)
+    np.testing.assert_array_equal(parsed.values, [1.0, 2.0])
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "0.1.1",
+        "0.1.42+roundtrip.1",
+        "0.1.0-alpha.1",
+        "0.2.0-alpha.1",
+        "0.2.0",
+        "1.0.0",
+    ],
+)
+def test_parse_rejects_semver_breaking_versions(version: str) -> None:
+    with pytest.raises(BinsparseParseError, match="unsupported Binsparse version"):
+        BinsparseTensor.parse(_dvec_container_with_version(version))
+
+
+@pytest.mark.parametrize("version", ["0.1", "01.1.0", 1])
+def test_parse_rejects_invalid_semver_versions(version: object) -> None:
+    with pytest.raises(BinsparseParseError):
+        BinsparseTensor.parse(_dvec_container_with_version(version))
 
 
 def test_in_memory_container_uses_descriptor_and_array_list() -> None:
