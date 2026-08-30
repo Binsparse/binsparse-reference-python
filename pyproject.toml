@@ -48,7 +48,15 @@ packages = ["src/binsparse", "src/reference_cli"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["osx-arm64"]
+platforms = [
+    { name = "linux-amd64", platform = "linux-64", glibc = "2.34" },
+    { name = "linux-arm64", platform = "linux-aarch64", glibc = "2.34" },
+    { name = "linux-ppc64", platform = "linux-ppc64le", glibc = "2.34" },
+    { name = "macos-arm64", platform = "osx-arm64", macos = "15.0" },
+    { name = "win-amd64", platform = "win-64" },
+]
+preview = ["pixi-build"]
+requires-pixi = ">=0.71.0"
 
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
