@@ -34,7 +34,7 @@ jobs:
       - name: Authenticate with Prefix.dev
         run: pixi auth login --token "${{ secrets.PREFIX_API_KEY }}" https://prefix.dev
       - name: Build and publish to Prefix.dev
-        run: pixi publish --target-channel https://prefix.dev/finch-tensor
+        run: pixi publish --target-channel https://prefix.dev/willow-ahrens/binsparse
       - name: Create a release
         uses: softprops/action-gh-release@v3
         env:
