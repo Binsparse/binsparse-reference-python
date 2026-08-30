@@ -44,9 +44,15 @@ preserved or expanded to custom level descriptors. The `copy` option allows a
 caller to request a copy, permit whichever representation is required, or
 require a zero-copy operation when the source and destination support it.
 
-Conversion helpers in `binsparse.conversions` convert between Binsparse tensors
-and NumPy, SciPy, PyTorch, or PyData/Sparse objects. NumPy support is included by
-default; the other adapters require their corresponding optional dependency.
+`binsparse.conversions` exports the following conversion functions:
+
+- NumPy: `from_numpy` and `to_numpy`
+- SciPy: `from_scipy` and `to_scipy`
+- PyTorch: `from_torch` and `to_torch`
+- PyData/Sparse: `from_sparse` and `to_sparse`
+
+NumPy support is included by default; the other adapters require their
+corresponding optional dependency.
 
 ## Source
 The source code for `binsparse` is available on GitHub at [https://github.com/Binsparse/binsparse-reference-python](https://github.com/Binsparse/binsparse-reference-python)
