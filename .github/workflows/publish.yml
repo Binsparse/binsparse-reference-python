@@ -33,8 +33,16 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
-      - name: Build and publish to Prefix.dev
-        run: pixi publish --target-channel https://prefix.dev/willow-ahrens/binsparse
+      - name: Build Prefix.dev package
+        run: pixi publish --target-dir "$RUNNER_TEMP/binsparse-conda"
+      - name: Publish to Prefix.dev
+        env:
+          PREFIX_API_KEY: ${{ secrets.PREFIX_API_KEY }}
+        run: >-
+          pixi upload prefix
+          --channel willow-ahrens/binsparse
+          --api-key "$PREFIX_API_KEY"
+          "$RUNNER_TEMP"/binsparse-conda/*.conda
       - name: Create a release
         uses: softprops/action-gh-release@v3
         env:
