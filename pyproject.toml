@@ -59,6 +59,19 @@ platforms = [
 preview = ["pixi-build"]
 requires-pixi = ">=0.71.0"
 
+[tool.pixi.package]
+name = "binsparse"
+version = "0.1.0"
+
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "0.*", channels = ["https://prefix.dev/conda-forge"] }
+
+[tool.pixi.package.build.config]
+ignore-pypi-mapping = false
+
+[tool.pixi.package.host-dependencies]
+hatchling = "*"
+
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
 benchmark = { features = ["test", "benchmark"], solve-group = "default" }
