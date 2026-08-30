@@ -32,6 +32,8 @@ jobs:
         with:
           skip-existing: true
       - name: Build and publish to Prefix.dev
+        env:
+          PREFIX_API_KEY: ${{ secrets.PREFIX_API_KEY }}
         run: pixi publish --target-channel https://prefix.dev/willow-ahrens/binsparse
       - name: Create a release
         uses: softprops/action-gh-release@v3
