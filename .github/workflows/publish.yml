@@ -21,8 +21,6 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
           pixi-version: v0.71.3
-          auth-host: prefix.dev
-          auth-token: ${{ secrets.PREFIX_API_KEY }}
       - name: Get version
         run: |
           VERSION=$(python -c 'import tomllib; print("v" + tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
@@ -33,7 +31,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
-      - name: Build Prefix.dev package
+      - name: Build Conda package
         run: pixi publish --target-dir "$RUNNER_TEMP/binsparse-conda"
       - name: Publish to Prefix.dev
         env:
@@ -42,6 +40,7 @@ jobs:
           pixi upload prefix
           --channel willow-ahrens/binsparse
           --api-key "$PREFIX_API_KEY"
+          --skip-existing
           "$RUNNER_TEMP"/binsparse-conda/*.conda
       - name: Create a release
         uses: softprops/action-gh-release@v3

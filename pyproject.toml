@@ -1,6 +1,8 @@
 [project]
 authors = [{name = "Willow Ahrens", email = "ahrens@gatech.edu"}]
 name = "binsparse"
+description = "Python reference implementation of the Binsparse binary sparse format"
+readme = "README.md"
 requires-python = ">= 3.11"
 version = "0.1.2"
 dependencies = [
