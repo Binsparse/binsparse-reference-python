@@ -26,7 +26,10 @@ def _prepare(value: Any, copy: bool | None) -> Any:
 
 
 def from_scipy(value: Any, *, copy: bool | None = None) -> BinsparseTensor:
-    """Convert a two-dimensional SciPy CSR, CSC, or COO object to Binsparse."""
+    """Convert SciPy CSR, CSC, or COO to Binsparse, sorting and summing duplicates.
+
+    The input is not modified. ``copy=False`` requires canonical input.
+    """
     scipy_sparse = _scipy_sparse()
     if not scipy_sparse.issparse(value) or value.ndim != 2:
         raise TypeError("expected a two-dimensional SciPy sparse array or matrix")

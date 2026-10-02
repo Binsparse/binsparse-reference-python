@@ -28,22 +28,36 @@ def test_scipy_round_trip(constructor, tensor_type) -> None:
     assert result.dtype == source.dtype
 
 
-def test_scipy_csr_is_sorted_and_unique() -> None:
-    source = scipy_sparse.csr_array(
+@pytest.mark.parametrize(
+    "constructor", [scipy_sparse.csr_array, scipy_sparse.csc_array]
+)
+def test_scipy_compressed_is_sorted_and_unique(constructor) -> None:
+    source = constructor(
         (
             np.array([1, 2, 3, 4, 5, 6]),
             np.array([2, 1, 2, 1, 0, 1]),
             np.array([0, 3, 6]),
         ),
-        shape=(2, 3),
+        shape=(2, 3) if constructor is scipy_sparse.csr_array else (3, 2),
     )
+    original = (source.indptr.copy(), source.indices.copy(), source.data.copy())
     tensor = from_scipy(source)
     result = to_scipy(tensor)
 
+    assert isinstance(tensor, (CSRMatrix, CSCMatrix))
     assert tensor.number_of_stored_values == 4
+    np.testing.assert_array_equal(tensor.pointers_to_1, [0, 2, 4])
+    np.testing.assert_array_equal(tensor.indices_1, [1, 2, 0, 1])
+    np.testing.assert_array_equal(tensor.values, [2, 4, 5, 10])
     assert result.has_canonical_format
     np.testing.assert_array_equal(result.toarray(), source.toarray())
     assert not source.has_canonical_format
+    for actual, expected in zip(
+        (source.indptr, source.indices, source.data), original, strict=True
+    ):
+        np.testing.assert_array_equal(actual, expected)
+    with pytest.raises(ValueError, match="canonicalize"):
+        from_scipy(source, copy=False)
 
 
 def test_scipy_coo_is_sorted_and_unique() -> None:
@@ -57,7 +71,11 @@ def test_scipy_coo_is_sorted_and_unique() -> None:
     tensor = from_scipy(source)
     result = to_scipy(tensor)
 
+    assert isinstance(tensor, COORMatrix)
     assert tensor.number_of_stored_values == 2
+    np.testing.assert_array_equal(tensor.indices_0, [0, 1])
+    np.testing.assert_array_equal(tensor.indices_1, [2, 0])
+    np.testing.assert_array_equal(tensor.values, [6, 4])
     assert result.has_canonical_format
     np.testing.assert_array_equal(result.toarray(), source.toarray())
     assert not source.has_canonical_format
@@ -86,7 +104,6 @@ def test_scipy_copy_false_rejects_required_input_canonicalization() -> None:
     )
     with pytest.raises(ValueError, match="canonicalize"):
         from_scipy(source, copy=False)
-
 
 
 def test_scipy_canonical_coo_copy_false_shares_buffers() -> None:

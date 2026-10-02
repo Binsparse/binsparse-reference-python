@@ -25,12 +25,28 @@ def _sparse() -> Any:
 
 
 def from_sparse(value: Any, *, copy: bool | None = None) -> BinsparseTensor:
-    """Convert an N-dimensional PyData/Sparse COO array to Binsparse."""
+    """Convert PyData/Sparse COO to Binsparse, sorting and summing duplicates.
+
+    The input is not modified. ``copy=False`` requires canonical input.
+    """
     sparse = _sparse()
     if not isinstance(value, sparse.COO) or value.ndim < 1:
         raise TypeError("expected a non-scalar PyData/Sparse COO array")
     if copy is True:
         value = value.copy(deep=True)
+    if copy is False:
+        linear = value.linear_loc()
+        if not np.all(linear[1:] > linear[:-1]):
+            raise ValueError("copy=False cannot canonicalize a PyData/Sparse array")
+    else:
+        value = sparse.COO(
+            value.coords,
+            value.data,
+            shape=value.shape,
+            fill_value=value.fill_value,
+            sorted=False,
+            has_duplicates=True,
+        )
     fill_value = np.asarray(value.fill_value).item()
     shape = tuple(value.shape)
     count = int(value.data.size)

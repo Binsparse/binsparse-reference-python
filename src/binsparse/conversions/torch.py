@@ -51,7 +51,12 @@ def _numpy(value: Any, copy: bool | None) -> np.ndarray:
 
 
 def from_torch(value: Any, *, copy: bool | None = None) -> BinsparseTensor:
-    """Convert a PyTorch dense, COO, CSR, or CSC tensor to Binsparse."""
+    """Convert PyTorch dense, COO, CSR, or CSC to Binsparse.
+
+    COO entries are sorted and duplicates summed without modifying the input.
+    ``copy=False`` requires coalesced COO input. CSR/CSC inputs are assumed to
+    satisfy PyTorch's sorted, unique index invariants.
+    """
     torch = _torch()
     if not isinstance(value, torch.Tensor):
         raise TypeError("expected a PyTorch tensor")
@@ -61,10 +66,16 @@ def from_torch(value: Any, *, copy: bool | None = None) -> BinsparseTensor:
         return from_numpy(array, copy=False if copy is True else copy)
 
     if value.layout == torch.sparse_coo:
-        indices = _numpy(value._indices(), copy)
-        values = _numpy(value._values(), copy)
         if value.dense_dim() != 0:
             raise TypeError("hybrid sparse COO tensors are not supported")
+        if not value.is_coalesced():
+            if copy is False:
+                raise ValueError(
+                    "copy=False cannot canonicalize a PyTorch sparse tensor"
+                )
+            value = value.coalesce()
+        indices = _numpy(value._indices(), copy)
+        values = _numpy(value._values(), copy)
         if value.sparse_dim() == 2:
             return COORMatrix(
                 tuple(value.shape),
@@ -79,10 +90,7 @@ def from_torch(value: Any, *, copy: bool | None = None) -> BinsparseTensor:
             level=SparseLevel(
                 value.sparse_dim(),
                 ElementLevel(values),
-                tuple(
-                    indices[dimension, :]
-                    for dimension in range(value.sparse_dim())
-                ),
+                tuple(indices[dimension, :] for dimension in range(value.sparse_dim())),
             ),
         )
 

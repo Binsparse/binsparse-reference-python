@@ -54,6 +54,12 @@ require a zero-copy operation when the source and destination support it.
 NumPy support is included by default; the other adapters require their
 corresponding optional dependency.
 
+SciPy, PyData/Sparse, and PyTorch COO imports sort indices and sum duplicate
+entries before constructing a Binsparse tensor, without modifying the source.
+`copy=False` requires canonical (sorted, duplicate-free) input; PyTorch COO
+tensors must be coalesced first. PyTorch CSR/CSC imports rely on PyTorch's
+sorted, unique index invariants.
+
 ## Source
 The source code for `binsparse` is available on GitHub at [https://github.com/Binsparse/binsparse-reference-python](https://github.com/Binsparse/binsparse-reference-python)
 
