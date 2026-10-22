@@ -13,7 +13,14 @@ from binsparse.tensor import CSRMatrix
 BIN = Path(__file__).parents[2] / "bin"
 
 
-def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
+def _read_document(path: Path) -> dict:
+    with np.load(path, allow_pickle=False) as archive:
+        return json.loads(str(archive["binsparse"].item()))
+
+
+def test_binsparse_tests_executables_round_trip_npz(
+    tmp_path, validate_binsparse
+) -> None:
     dense = np.full((3, 4), -1, dtype=np.int16)
     dense[0, 2] = 5
     dense[2, 0] = 6
@@ -65,6 +72,7 @@ def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
         check=True,
     )
 
+    validate_binsparse(_read_document(binsparse_out))
     tensor = load_binsparse(binsparse_out)
     assert isinstance(tensor, CSRMatrix)
     assert tensor.fill_value == np.int16(-1)
@@ -98,6 +106,7 @@ def test_binsparse_tests_executables_round_trip_npz(tmp_path) -> None:
         check=True,
     )
 
+    validate_binsparse(_read_document(roundtrip_out))
     roundtrip = load_binsparse(roundtrip_out)
     assert isinstance(roundtrip, CSRMatrix)
     np.testing.assert_array_equal(roundtrip.pointers_to_1, tensor.pointers_to_1)

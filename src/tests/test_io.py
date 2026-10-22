@@ -33,7 +33,9 @@ def test_npz_file_round_trip_dispatches_by_extension(tmp_path) -> None:
     assert result.number_of_stored_values == 3
 
 
-def test_hdf5_file_round_trip_dispatches_by_extension(tmp_path) -> None:
+def test_hdf5_file_round_trip_dispatches_by_extension(
+    tmp_path, validate_binsparse
+) -> None:
     path = tmp_path / "tensor.h5"
 
     save_binsparse(_csr(), path)
@@ -41,6 +43,7 @@ def test_hdf5_file_round_trip_dispatches_by_extension(tmp_path) -> None:
 
     with h5py.File(path, "r") as file:
         document = json.loads(file.attrs["binsparse"])
+    validate_binsparse(document)
     assert set(document) == {"binsparse"}
     assert document["binsparse"]["format"] == "CSR"
     result = load_binsparse(path)
@@ -51,7 +54,7 @@ def test_hdf5_file_round_trip_dispatches_by_extension(tmp_path) -> None:
     np.testing.assert_array_equal(result.values, [5, 6, 7])
 
 
-def test_hdf5_bint8_uses_plain_uint8_dataset(tmp_path) -> None:
+def test_hdf5_bint8_uses_plain_uint8_dataset(tmp_path, validate_binsparse) -> None:
     import h5py
 
     path = tmp_path / "boolean.h5"
@@ -62,6 +65,7 @@ def test_hdf5_bint8_uses_plain_uint8_dataset(tmp_path) -> None:
         assert file["values"].dtype == np.dtype("uint8")
         assert file["values"].dtype.metadata is None
         document = json.loads(file.attrs["binsparse"])
+        validate_binsparse(document)
         assert document["binsparse"]["data_types"]["values"] == "bint8"
         decoded = HDF5BinsparseContainer(file).read_buffer("values")
         assert decoded.dtype == np.dtype("bool")
